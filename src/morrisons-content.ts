@@ -293,15 +293,15 @@ import type {
 
   // --- Init ---
 
-  function activateSort(): void {
+  async function activateSort(): Promise<void> {
     const combobox = findSortCombobox();
     if (!combobox) {
       console.warn(`${LOG_PREFIX} Sort combobox not found`);
       return;
     }
 
-    void selectPricePerOption(combobox).then((success) => {
-      if (!success) return;
+    const success = await selectPricePerOption(combobox);
+    if (success) {
       valueSortActive = true;
       observeComboboxResets();
       // Wait for server response to update DOM, then client-side sort
@@ -309,23 +309,22 @@ import type {
         sortProductsByUnitPrice();
         observeProductLoads();
       }, 1000);
-    });
-  }
-
-  function waitAndActivate(): void {
-    void waitForSelector(PRODUCTS_PAGE_SELECTOR, 10000).then((page) => {
-      if (!page) return;
-      return waitForSelector(SORT_COMBOBOX_SELECTOR, 10000).then((combobox) => {
-        if (combobox) return activateSort();
-      });
-    });
+    }
   }
 
   function init(): void {
     const loc = document.location;
     console.log(`${LOG_PREFIX} Initializing on ${loc.href}`);
 
-    waitAndActivate();
+    void (async () => {
+      const page = await waitForSelector(PRODUCTS_PAGE_SELECTOR, 10000);
+      if (!page) {
+        console.warn(`${LOG_PREFIX} Products page not found within 10s`);
+        return;
+      }
+      const combobox = await waitForSelector(SORT_COMBOBOX_SELECTOR, 10000);
+      if (combobox) activateSort();
+    })();
 
     // Watch for SPA navigation
     let lastUrl = loc.href;
@@ -344,7 +343,12 @@ import type {
           productObserver = null;
         }
 
-        waitAndActivate();
+        void (async () => {
+          const page = await waitForSelector(PRODUCTS_PAGE_SELECTOR, 10000);
+          if (!page) return;
+          const combobox = await waitForSelector(SORT_COMBOBOX_SELECTOR, 10000);
+          if (combobox) activateSort();
+        })();
       }
     }).observe(document.body, { childList: true, subtree: true });
   }
