@@ -114,34 +114,28 @@ import type {
   // --- Utilities ---
 
   function waitForSelector(selector: string, timeout = 10000): Promise<HTMLElement | null> {
-    return new Promise((resolve) => {
-      const existing = document.querySelector<HTMLElement>(selector);
-      if (existing) {
-        resolve(existing);
-        return;
-      }
+    const existing = document.querySelector<HTMLElement>(selector);
+    if (existing) return Promise.resolve(existing);
 
+    return new Promise((resolve) => {
       let done = false;
 
-      const observer = new MutationObserver(() => {
+      function settle(value: HTMLElement | null): void {
         if (done) return;
+        done = true;
+        observer.disconnect();
+        clearTimeout(timer);
+        resolve(value);
+      }
+
+      const observer = new MutationObserver(() => {
         const el = document.querySelector<HTMLElement>(selector);
-        if (el) {
-          done = true;
-          observer.disconnect();
-          clearTimeout(timer);
-          resolve(el);
-        }
+        if (el) settle(el);
       });
 
       observer.observe(document.body, { childList: true, subtree: true });
 
-      const timer = setTimeout(() => {
-        if (done) return;
-        done = true;
-        observer.disconnect();
-        resolve(null);
-      }, timeout);
+      const timer = setTimeout(() => settle(null), timeout);
     });
   }
 
@@ -330,15 +324,15 @@ import type {
     const loc = document.location;
     console.log(`${LOG_PREFIX} Initializing on ${loc.href}`);
 
-    waitForSelector(PRODUCTS_PAGE_SELECTOR, 10000).then((page) => {
+    void (async () => {
+      const page = await waitForSelector(PRODUCTS_PAGE_SELECTOR, 10000);
       if (!page) {
         console.warn(`${LOG_PREFIX} Products page not found within 10s`);
         return;
       }
-      waitForSelector(SORT_COMBOBOX_SELECTOR, 10000).then((combobox) => {
-        if (combobox) activateSort();
-      });
-    });
+      const combobox = await waitForSelector(SORT_COMBOBOX_SELECTOR, 10000);
+      if (combobox) activateSort();
+    })();
 
     // Watch for SPA navigation
     let lastUrl = loc.href;
@@ -357,12 +351,12 @@ import type {
           productObserver = null;
         }
 
-        waitForSelector(PRODUCTS_PAGE_SELECTOR, 10000).then((page) => {
+        void (async () => {
+          const page = await waitForSelector(PRODUCTS_PAGE_SELECTOR, 10000);
           if (!page) return;
-          waitForSelector(SORT_COMBOBOX_SELECTOR, 10000).then((combobox) => {
-            if (combobox) activateSort();
-          });
-        });
+          const combobox = await waitForSelector(SORT_COMBOBOX_SELECTOR, 10000);
+          if (combobox) activateSort();
+        })();
       }
     }).observe(document.body, { childList: true, subtree: true });
   }

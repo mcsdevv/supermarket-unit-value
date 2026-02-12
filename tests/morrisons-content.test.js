@@ -7,10 +7,6 @@ const { JSDOM } = require("jsdom");
 const SCRIPT_PATH = path.join(__dirname, "..", "morrisons-content.js");
 const SCRIPT_SOURCE = fs.readFileSync(SCRIPT_PATH, "utf8");
 
-function delay(window, ms) {
-  return new Promise((resolve) => window.setTimeout(resolve, ms));
-}
-
 // --- HTML Helpers ---
 
 function morrisonsProduct(price, unit, id) {
