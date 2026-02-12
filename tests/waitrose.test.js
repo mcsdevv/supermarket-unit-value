@@ -122,14 +122,11 @@ function createProductGrid(doc, products) {
 }
 
 function setupDom(bodyHtml = "") {
-  const dom = new JSDOM(
-    `<!doctype html><html><body>${bodyHtml}</body></html>`,
-    {
-      url: "https://www.waitrose.com/ecom/shop/browse/groceries/fresh_and_chilled",
-      runScripts: "outside-only",
-      pretendToBeVisual: true,
-    }
-  );
+  const dom = new JSDOM(`<!doctype html><html><body>${bodyHtml}</body></html>`, {
+    url: "https://www.waitrose.com/ecom/shop/browse/groceries/fresh_and_chilled",
+    runScripts: "outside-only",
+    pretendToBeVisual: true,
+  });
 
   const { window } = dom;
   const warnings = [];
@@ -152,7 +149,10 @@ function setupDom(bodyHtml = "") {
 
 test("parseWaitroseUnitPrice parses pounds-per-litre format", (t) => {
   const env = setupDom();
-  t.after(() => { env.hooks.resetObservers(); env.dom.window.close(); });
+  t.after(() => {
+    env.hooks.resetObservers();
+    env.dom.window.close();
+  });
 
   const result = env.hooks.parseWaitroseUnitPrice("Price per unit\u00a35.19/litre");
   assert.ok(result);
@@ -162,7 +162,10 @@ test("parseWaitroseUnitPrice parses pounds-per-litre format", (t) => {
 
 test("parseWaitroseUnitPrice parses pounds-per-kg format", (t) => {
   const env = setupDom();
-  t.after(() => { env.hooks.resetObservers(); env.dom.window.close(); });
+  t.after(() => {
+    env.hooks.resetObservers();
+    env.dom.window.close();
+  });
 
   const result = env.hooks.parseWaitroseUnitPrice("Price per unit\u00a33.32/kg");
   assert.ok(result);
@@ -172,7 +175,10 @@ test("parseWaitroseUnitPrice parses pounds-per-kg format", (t) => {
 
 test("parseWaitroseUnitPrice parses pence-each format", (t) => {
   const env = setupDom();
-  t.after(() => { env.hooks.resetObservers(); env.dom.window.close(); });
+  t.after(() => {
+    env.hooks.resetObservers();
+    env.dom.window.close();
+  });
 
   const result = env.hooks.parseWaitroseUnitPrice("Price per unit46.7p each");
   assert.ok(result);
@@ -182,7 +188,10 @@ test("parseWaitroseUnitPrice parses pence-each format", (t) => {
 
 test("parseWaitroseUnitPrice parses pence-per-100g format", (t) => {
   const env = setupDom();
-  t.after(() => { env.hooks.resetObservers(); env.dom.window.close(); });
+  t.after(() => {
+    env.hooks.resetObservers();
+    env.dom.window.close();
+  });
 
   const result = env.hooks.parseWaitroseUnitPrice("Price per unit89p/100g");
   assert.ok(result);
@@ -192,17 +201,23 @@ test("parseWaitroseUnitPrice parses pence-per-100g format", (t) => {
 
 test("parseWaitroseUnitPrice parses pounds-each format", (t) => {
   const env = setupDom();
-  t.after(() => { env.hooks.resetObservers(); env.dom.window.close(); });
+  t.after(() => {
+    env.hooks.resetObservers();
+    env.dom.window.close();
+  });
 
   const result = env.hooks.parseWaitroseUnitPrice("Price per unit\u00a31.20 each");
   assert.ok(result);
-  assert.equal(result.price, 1.20);
+  assert.equal(result.price, 1.2);
   assert.equal(result.unit, "each");
 });
 
 test("parseWaitroseUnitPrice parses no-decimal format", (t) => {
   const env = setupDom();
-  t.after(() => { env.hooks.resetObservers(); env.dom.window.close(); });
+  t.after(() => {
+    env.hooks.resetObservers();
+    env.dom.window.close();
+  });
 
   const result = env.hooks.parseWaitroseUnitPrice("Price per unit\u00a35/kg");
   assert.ok(result);
@@ -212,7 +227,10 @@ test("parseWaitroseUnitPrice parses no-decimal format", (t) => {
 
 test("parseWaitroseUnitPrice returns null for per-unit-only text", (t) => {
   const env = setupDom();
-  t.after(() => { env.hooks.resetObservers(); env.dom.window.close(); });
+  t.after(() => {
+    env.hooks.resetObservers();
+    env.dom.window.close();
+  });
 
   const result = env.hooks.parseWaitroseUnitPrice("Price per unitper kg");
   assert.equal(result, null);
@@ -220,7 +238,10 @@ test("parseWaitroseUnitPrice returns null for per-unit-only text", (t) => {
 
 test("findSortContainers finds all sort containers", (t) => {
   const env = setupDom();
-  t.after(() => { env.hooks.resetObservers(); env.dom.window.close(); });
+  t.after(() => {
+    env.hooks.resetObservers();
+    env.dom.window.close();
+  });
 
   const sort1 = createSortContainer(env.document);
   const sort2 = createSortContainer(env.document);
@@ -233,7 +254,10 @@ test("findSortContainers finds all sort containers", (t) => {
 
 test("injectValueOption adds option when dropdown opens", async (t) => {
   const env = setupDom();
-  t.after(() => { env.hooks.resetObservers(); env.dom.window.close(); });
+  t.after(() => {
+    env.hooks.resetObservers();
+    env.dom.window.close();
+  });
 
   const sort = createSortContainer(env.document);
   env.document.body.appendChild(sort.container);
@@ -241,10 +265,7 @@ test("injectValueOption adds option when dropdown opens", async (t) => {
   env.hooks.injectValueOption(sort.container);
 
   // Simulate dropdown opening by adding options content
-  const options = createDropdownOptions(env.document, [
-    "MOST_POPULAR",
-    "PRICE_LOW_2_HIGH",
-  ]);
+  const options = createDropdownOptions(env.document, ["MOST_POPULAR", "PRICE_LOW_2_HIGH"]);
   sort.contentWrapper.appendChild(options);
 
   await delay(env.window, 30);
@@ -259,7 +280,10 @@ test("injectValueOption adds option when dropdown opens", async (t) => {
 
 test("injectValueOption does not duplicate on re-open", async (t) => {
   const env = setupDom();
-  t.after(() => { env.hooks.resetObservers(); env.dom.window.close(); });
+  t.after(() => {
+    env.hooks.resetObservers();
+    env.dom.window.close();
+  });
 
   const sort = createSortContainer(env.document);
   env.document.body.appendChild(sort.container);
@@ -287,7 +311,10 @@ test("injectValueOption does not duplicate on re-open", async (t) => {
 
 test("sortByUnitPrice sorts products ascending", (t) => {
   const env = setupDom();
-  t.after(() => { env.hooks.resetObservers(); env.dom.window.close(); });
+  t.after(() => {
+    env.hooks.resetObservers();
+    env.dom.window.close();
+  });
 
   const grid = createProductGrid(env.document, [
     { name: "Expensive", unitPrice: "\u00a35.19/litre" },
@@ -305,7 +332,10 @@ test("sortByUnitPrice sorts products ascending", (t) => {
 
 test("sortByUnitPrice puts items without unit price at bottom", (t) => {
   const env = setupDom();
-  t.after(() => { env.hooks.resetObservers(); env.dom.window.close(); });
+  t.after(() => {
+    env.hooks.resetObservers();
+    env.dom.window.close();
+  });
 
   const grid = createProductGrid(env.document, [
     { name: "No price" },
@@ -323,7 +353,10 @@ test("sortByUnitPrice puts items without unit price at bottom", (t) => {
 
 test("sortByUnitPrice groups different units correctly", (t) => {
   const env = setupDom();
-  t.after(() => { env.hooks.resetObservers(); env.dom.window.close(); });
+  t.after(() => {
+    env.hooks.resetObservers();
+    env.dom.window.close();
+  });
 
   const grid = createProductGrid(env.document, [
     { name: "Litre item", unitPrice: "\u00a35.19/litre" },
@@ -344,7 +377,10 @@ test("sortByUnitPrice groups different units correctly", (t) => {
 
 test("observeProductGrid re-sorts when new products are added", async (t) => {
   const env = setupDom();
-  t.after(() => { env.hooks.resetObservers(); env.dom.window.close(); });
+  t.after(() => {
+    env.hooks.resetObservers();
+    env.dom.window.close();
+  });
 
   const grid = createProductGrid(env.document, [
     { name: "B", unitPrice: "\u00a35.00/kg" },
@@ -381,7 +417,10 @@ test("observeProductGrid re-sorts when new products are added", async (t) => {
 
 test("observeProductGrid does not loop on self-mutations from sorting", async (t) => {
   const env = setupDom();
-  t.after(() => { env.hooks.resetObservers(); env.dom.window.close(); });
+  t.after(() => {
+    env.hooks.resetObservers();
+    env.dom.window.close();
+  });
 
   const grid = createProductGrid(env.document, [
     { name: "B", unitPrice: "\u00a35.00/kg" },
@@ -401,11 +440,12 @@ test("observeProductGrid does not loop on self-mutations from sorting", async (t
 
 test("clicking value option updates button text", async (t) => {
   const env = setupDom();
-  t.after(() => { env.hooks.resetObservers(); env.dom.window.close(); });
+  t.after(() => {
+    env.hooks.resetObservers();
+    env.dom.window.close();
+  });
 
-  const grid = createProductGrid(env.document, [
-    { name: "A", unitPrice: "\u00a32.00/kg" },
-  ]);
+  const grid = createProductGrid(env.document, [{ name: "A", unitPrice: "\u00a32.00/kg" }]);
   env.document.body.appendChild(grid);
 
   const sort = createSortContainer(env.document);
@@ -420,20 +460,25 @@ test("clicking value option updates button text", async (t) => {
   await delay(env.window, 30);
 
   // Click the value option
-  const valueLabel = sort.contentWrapper.querySelector('input[name="VALUE_UNIT_PRICE"]').closest("label");
+  const valueLabel = sort.contentWrapper
+    .querySelector('input[name="VALUE_UNIT_PRICE"]')
+    .closest("label");
   valueLabel.click();
 
   await delay(env.window, 30);
 
   assert.ok(
     sort.span.textContent.includes("Value (Unit Price)"),
-    `button text should include 'Value (Unit Price)', got: ${sort.span.textContent}`
+    `button text should include 'Value (Unit Price)', got: ${sort.span.textContent}`,
   );
 });
 
 test("init gates injection on product grid appearing", async (t) => {
   const env = setupDom();
-  t.after(() => { env.hooks.resetObservers(); env.dom.window.close(); });
+  t.after(() => {
+    env.hooks.resetObservers();
+    env.dom.window.close();
+  });
 
   env.hooks.init();
   await delay(env.window, 10);
@@ -448,24 +493,27 @@ test("init gates injection on product grid appearing", async (t) => {
   assert.equal(env.hooks.valueSortActive, false);
 
   // Now add product grid
-  const grid = createProductGrid(env.document, [
-    { name: "A", unitPrice: "\u00a32.00/kg" },
-  ]);
+  const grid = createProductGrid(env.document, [{ name: "A", unitPrice: "\u00a32.00/kg" }]);
   env.document.body.appendChild(grid);
 
   await delay(env.window, 50);
 
   // Now value sort should be active
-  assert.equal(env.hooks.valueSortActive, true, "valueSortActive should be true after grid appears");
+  assert.equal(
+    env.hooks.valueSortActive,
+    true,
+    "valueSortActive should be true after grid appears",
+  );
 });
 
 test("selecting a native sort option clears valueSortActive", async (t) => {
   const env = setupDom();
-  t.after(() => { env.hooks.resetObservers(); env.dom.window.close(); });
+  t.after(() => {
+    env.hooks.resetObservers();
+    env.dom.window.close();
+  });
 
-  const grid = createProductGrid(env.document, [
-    { name: "A", unitPrice: "\u00a32.00/kg" },
-  ]);
+  const grid = createProductGrid(env.document, [{ name: "A", unitPrice: "\u00a32.00/kg" }]);
   env.document.body.appendChild(grid);
 
   const sort = createSortContainer(env.document);
@@ -479,13 +527,17 @@ test("selecting a native sort option clears valueSortActive", async (t) => {
   await delay(env.window, 30);
 
   // Click value option first
-  const valueLabel = sort.contentWrapper.querySelector('input[name="VALUE_UNIT_PRICE"]').closest("label");
+  const valueLabel = sort.contentWrapper
+    .querySelector('input[name="VALUE_UNIT_PRICE"]')
+    .closest("label");
   valueLabel.click();
   await delay(env.window, 30);
   assert.equal(env.hooks.valueSortActive, true);
 
   // Click a native sort option
-  const nativeLabel = sort.contentWrapper.querySelector('input[name="MOST_POPULAR"]').closest("label");
+  const nativeLabel = sort.contentWrapper
+    .querySelector('input[name="MOST_POPULAR"]')
+    .closest("label");
   nativeLabel.click();
   await delay(env.window, 30);
 
@@ -494,7 +546,10 @@ test("selecting a native sort option clears valueSortActive", async (t) => {
 
 test("extractUnitPrice handles pence format correctly", (t) => {
   const env = setupDom();
-  t.after(() => { env.hooks.resetObservers(); env.dom.window.close(); });
+  t.after(() => {
+    env.hooks.resetObservers();
+    env.dom.window.close();
+  });
 
   const article = env.document.createElement("article");
   article.className = "productPod___abc";

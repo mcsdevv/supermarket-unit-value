@@ -91,9 +91,9 @@ import { normalizePrice, compareByUnitPrice, waitForElement } from "./shared";
 
     // Reorder DOM — appendChild moves existing nodes (no cloning).
     // Pause observation while reordering to avoid self-triggered sort loops.
-    const shouldResumeObserver = valueSortActive && productObserver !== null;
-    if (shouldResumeObserver) {
-      productObserver.disconnect();
+    const observerToResume = valueSortActive ? productObserver : null;
+    if (observerToResume) {
+      observerToResume.disconnect();
     }
 
     try {
@@ -101,10 +101,10 @@ import { normalizePrice, compareByUnitPrice, waitForElement } from "./shared";
         grid.appendChild(item.element);
       }
     } finally {
-      if (shouldResumeObserver && productObserver) {
+      if (observerToResume) {
         const currentGrid = getProductGrid();
         if (currentGrid) {
-          productObserver.observe(currentGrid, { childList: true, subtree: true });
+          observerToResume.observe(currentGrid, { childList: true, subtree: true });
         }
       }
     }
@@ -424,12 +424,9 @@ import { normalizePrice, compareByUnitPrice, waitForElement } from "./shared";
     console.log(`${LOG_PREFIX} Initializing on ${loc.href}`);
 
     // Gate on product grid before looking for sort controls
-    stopProductGridWatch = waitForElement(
-      PRODUCT_GRID_SELECTOR,
-      () => attemptInjection(),
-      10000,
-      { logPrefix: LOG_PREFIX },
-    );
+    stopProductGridWatch = waitForElement(PRODUCT_GRID_SELECTOR, () => attemptInjection(), 10000, {
+      logPrefix: LOG_PREFIX,
+    });
 
     // Watch for SPA navigation
     let lastUrl = loc.href;
