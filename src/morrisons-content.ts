@@ -111,28 +111,24 @@ import type {
   // --- Utilities ---
 
   function waitForSelector(selector: string, timeout = 10000): Promise<HTMLElement | null> {
+    const existing = document.querySelector<HTMLElement>(selector);
+    if (existing) return Promise.resolve(existing);
+
     return new Promise((resolve) => {
-      const existing = document.querySelector<HTMLElement>(selector);
-      if (existing) {
-        resolve(existing);
-        return;
+      function settle(value: HTMLElement | null) {
+        observer.disconnect();
+        clearTimeout(timer);
+        resolve(value);
       }
 
       const observer = new MutationObserver(() => {
         const el = document.querySelector<HTMLElement>(selector);
-        if (el) {
-          observer.disconnect();
-          clearTimeout(timer);
-          resolve(el);
-        }
+        if (el) settle(el);
       });
 
       observer.observe(document.body, { childList: true, subtree: true });
 
-      const timer = setTimeout(() => {
-        observer.disconnect();
-        resolve(null);
-      }, timeout);
+      const timer = setTimeout(() => settle(null), timeout);
     });
   }
 
@@ -305,15 +301,14 @@ import type {
     }
 
     void selectPricePerOption(combobox).then((success) => {
-      if (success) {
-        valueSortActive = true;
-        observeComboboxResets();
-        // Wait for server response to update DOM, then client-side sort
-        setTimeout(() => {
-          sortProductsByUnitPrice();
-          observeProductLoads();
-        }, 1000);
-      }
+      if (!success) return;
+      valueSortActive = true;
+      observeComboboxResets();
+      // Wait for server response to update DOM, then client-side sort
+      setTimeout(() => {
+        sortProductsByUnitPrice();
+        observeProductLoads();
+      }, 1000);
     });
   }
 
@@ -321,7 +316,7 @@ import type {
     void waitForSelector(PRODUCTS_PAGE_SELECTOR, 10000).then((page) => {
       if (!page) return;
       return waitForSelector(SORT_COMBOBOX_SELECTOR, 10000).then((combobox) => {
-        if (combobox) activateSort();
+        if (combobox) return activateSort();
       });
     });
   }
