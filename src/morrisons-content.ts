@@ -113,30 +113,33 @@ import type {
 
   // --- Utilities ---
 
-  function waitForSelector(selector: string, timeout = 10000): Promise<HTMLElement | null> {
+  async function waitForSelector(selector: string, timeout = 10000): Promise<HTMLElement | null> {
     const existing = document.querySelector<HTMLElement>(selector);
-    if (existing) return Promise.resolve(existing);
+    if (existing) return existing;
 
-    return new Promise((resolve) => {
-      let done = false;
-
-      function settle(value: HTMLElement | null): void {
-        if (done) return;
-        done = true;
-        observer.disconnect();
-        clearTimeout(timer);
-        resolve(value);
-      }
+    const result = await new Promise<HTMLElement | null>((resolve) => {
+      const ac = new AbortController();
 
       const observer = new MutationObserver(() => {
         const el = document.querySelector<HTMLElement>(selector);
-        if (el) settle(el);
+        if (el) {
+          ac.abort();
+          observer.disconnect();
+          resolve(el);
+        }
       });
 
       observer.observe(document.body, { childList: true, subtree: true });
 
-      const timer = setTimeout(() => settle(null), timeout);
+      setTimeout(() => {
+        if (!ac.signal.aborted) {
+          observer.disconnect();
+          resolve(null);
+        }
+      }, timeout);
     });
+
+    return result;
   }
 
   // --- Combobox Interaction ---
@@ -300,24 +303,23 @@ import type {
 
   // --- Init ---
 
-  function activateSort(): void {
+  async function activateSort(): Promise<void> {
     const combobox = findSortCombobox();
     if (!combobox) {
       console.warn(`${LOG_PREFIX} Sort combobox not found`);
       return;
     }
 
-    selectPricePerOption(combobox).then((success) => {
-      if (success) {
-        valueSortActive = true;
-        observeComboboxResets();
-        // Wait for server response to update DOM, then client-side sort
-        setTimeout(() => {
-          sortProductsByUnitPrice();
-          observeProductLoads();
-        }, 1000);
-      }
-    });
+    const success = await selectPricePerOption(combobox);
+    if (success) {
+      valueSortActive = true;
+      observeComboboxResets();
+      // Wait for server response to update DOM, then client-side sort
+      setTimeout(() => {
+        sortProductsByUnitPrice();
+        observeProductLoads();
+      }, 1000);
+    }
   }
 
   function init(): void {
