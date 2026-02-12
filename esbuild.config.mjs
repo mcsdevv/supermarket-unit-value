@@ -32,6 +32,12 @@ const configs = [
     entryPoints: ["src/morrisons-content.ts"],
     outfile: "dist/morrisons-content.js",
   },
+  {
+    ...sharedOptions,
+    define: isProd ? { "window.__WAITROSE_VALUE_SORT_TEST_MODE__": "false" } : {},
+    entryPoints: ["src/waitrose.ts"],
+    outfile: "dist/waitrose.js",
+  },
 ];
 
 function copyAssets() {
