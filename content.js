@@ -3,6 +3,7 @@
 
   const LOG_PREFIX = "[Tesco Value Sort]";
   const VALUE_OPTION_ID = "value-sort";
+  let valueSortActive = false;
 
   // --- Selectors ---
   const UNIT_PRICE_SELECTOR = '[class*="price__subtext"]';
@@ -245,10 +246,13 @@
       "change",
       (e) => {
         if (select.value === VALUE_OPTION_ID) {
+          valueSortActive = true;
           e.stopImmediatePropagation();
           e.preventDefault();
           sortByUnitPrice();
           observeProductList();
+        } else {
+          valueSortActive = false;
         }
       },
       true
@@ -386,6 +390,10 @@
         console.log(`${LOG_PREFIX} Value option removed by re-render, re-injecting`);
         injectValueOption(currentSelect);
       }
+
+      if (valueSortActive && currentSelect.value !== VALUE_OPTION_ID) {
+        currentSelect.value = VALUE_OPTION_ID;
+      }
     };
 
     selectObserver = new MutationObserver(() => {
@@ -413,6 +421,7 @@
       if (location.href !== lastUrl) {
         lastUrl = location.href;
         console.log(`${LOG_PREFIX} SPA navigation to ${location.href}`);
+        valueSortActive = false;
         // Clean up observers from previous page
         if (productObserver) {
           productObserver.disconnect();
@@ -439,7 +448,10 @@
       observeSelectRerender,
       waitForElement,
       attemptInjection,
+      get valueSortActive() { return valueSortActive; },
+      set valueSortActive(v) { valueSortActive = v; },
       resetObservers: () => {
+        valueSortActive = false;
         if (productObserver) {
           productObserver.disconnect();
           productObserver = null;

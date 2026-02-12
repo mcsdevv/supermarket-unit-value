@@ -160,3 +160,75 @@ test("observeSelectRerender re-injects when the sort select node is replaced", a
     "expected Value option to be re-injected into replacement select"
   );
 });
+
+test("selecting Value (Unit Price) persists selection after React re-render", async (t) => {
+  const env = setupDom(
+    '<div id="sort-wrap"><label>Sort by</label>' +
+    '<select><option value="relevance">Relevance</option></select></div>' +
+    '<ul data-auto="product-list">' +
+    '<li><span class="price__subtext">\u00a31.00/kg</span></li>' +
+    '</ul>'
+  );
+  t.after(() => {
+    env.hooks.resetObservers();
+    env.dom.window.close();
+  });
+
+  const wrapper = env.document.getElementById("sort-wrap");
+  const select = wrapper.querySelector("select");
+
+  env.hooks.injectValueOption(select);
+  env.hooks.observeSelectRerender(select);
+
+  // Simulate selecting "Value (Unit Price)"
+  select.value = env.hooks.VALUE_OPTION_ID;
+  select.dispatchEvent(new env.window.Event("change", { bubbles: true }));
+
+  assert.equal(select.value, env.hooks.VALUE_OPTION_ID, "select should show value-sort");
+  assert.equal(env.hooks.valueSortActive, true, "valueSortActive flag should be set");
+
+  // Simulate React re-render: remove our option, reset value
+  const opt = select.querySelector(`option[value="${env.hooks.VALUE_OPTION_ID}"]`);
+  if (opt) opt.remove();
+  select.value = "relevance";
+
+  await delay(env.window, 30);
+
+  // Observer should have re-injected the option AND restored the selection
+  assert.ok(
+    select.querySelector(`option[value="${env.hooks.VALUE_OPTION_ID}"]`),
+    "Value option should be re-injected after re-render"
+  );
+  assert.equal(
+    select.value,
+    env.hooks.VALUE_OPTION_ID,
+    "select value should be restored to value-sort after re-render"
+  );
+});
+
+test("selecting a different sort option clears valueSortActive", async (t) => {
+  const env = setupDom(
+    '<div id="sort-wrap"><label>Sort by</label>' +
+    '<select><option value="relevance">Relevance</option></select></div>' +
+    '<ul data-auto="product-list">' +
+    '<li><span class="price__subtext">\u00a31.00/kg</span></li>' +
+    '</ul>'
+  );
+  t.after(() => {
+    env.hooks.resetObservers();
+    env.dom.window.close();
+  });
+
+  const select = env.document.querySelector("select");
+  env.hooks.injectValueOption(select);
+
+  // Select value-sort first
+  select.value = env.hooks.VALUE_OPTION_ID;
+  select.dispatchEvent(new env.window.Event("change", { bubbles: true }));
+  assert.equal(env.hooks.valueSortActive, true);
+
+  // Switch to a different sort
+  select.value = "relevance";
+  select.dispatchEvent(new env.window.Event("change", { bubbles: true }));
+  assert.equal(env.hooks.valueSortActive, false, "valueSortActive should be cleared");
+});
