@@ -16,6 +16,7 @@ import {
   // --- Selectors ---
   const UNIT_PRICE_SELECTOR = '[class*="price__subtext"]';
   const PRODUCT_LIST_SELECTORS = ['[data-auto="product-list"]', "#list-content", "ul.product-list"];
+  const DROPDOWN_LABEL_SELECTOR = ".ddsweb-dropdown__select-span";
 
   // --- Extraction ---
 
@@ -71,6 +72,13 @@ import {
     }
 
     return null;
+  }
+
+  function updateDropdownLabel(select: HTMLSelectElement, text: string): void {
+    const label = select.parentElement?.querySelector(DROPDOWN_LABEL_SELECTOR);
+    if (label) {
+      label.textContent = text;
+    }
   }
 
   function getProductList(): HTMLElement | null {
@@ -173,6 +181,7 @@ import {
           valueSortActive = true;
           e.stopImmediatePropagation();
           e.preventDefault();
+          updateDropdownLabel(select, "Value (Unit Price)");
           sortByUnitPrice();
           observeProductList();
         } else {
@@ -185,6 +194,7 @@ import {
     console.log(`${LOG_PREFIX} Injected "Value (Unit Price)" sort option`);
 
     select.value = VALUE_OPTION_ID;
+    updateDropdownLabel(select, "Value (Unit Price)");
     sortByUnitPrice();
     observeProductList();
   }
@@ -207,6 +217,7 @@ import {
       console.log(`${LOG_PREFIX} Sort dropdown found immediately`);
       injectValueOption(select);
       observeSelectRerender(select);
+      observeLabelRerender();
       return;
     }
 
@@ -230,6 +241,7 @@ import {
         console.log(`${LOG_PREFIX} Sort dropdown found via ${source}`);
         injectValueOption(dropdown);
         observeSelectRerender(dropdown);
+        observeLabelRerender();
         return true;
       }
       return false;
@@ -280,12 +292,14 @@ import {
       } else if (currentSelect.value !== VALUE_OPTION_ID) {
         console.log(`${LOG_PREFIX} Value option deselected by re-render, re-selecting`);
         currentSelect.value = VALUE_OPTION_ID;
+        updateDropdownLabel(currentSelect, "Value (Unit Price)");
         sortByUnitPrice();
         observeProductList();
       }
 
       if (valueSortActive && currentSelect.value !== VALUE_OPTION_ID) {
         currentSelect.value = VALUE_OPTION_ID;
+        updateDropdownLabel(currentSelect, "Value (Unit Price)");
       }
     };
 
@@ -301,6 +315,43 @@ import {
     });
 
     selectObserver.observe(document.body, { childList: true, subtree: true });
+  }
+
+  // Re-apply visible label text after React re-renders the dropdown span
+  let labelObserver: MutationObserver | null = null;
+
+  function observeLabelRerender(): void {
+    if (labelObserver) {
+      labelObserver.disconnect();
+      labelObserver = null;
+    }
+
+    let syncScheduled = false;
+
+    labelObserver = new MutationObserver(() => {
+      if (!valueSortActive || syncScheduled) {
+        return;
+      }
+      syncScheduled = true;
+      queueMicrotask(() => {
+        syncScheduled = false;
+        if (!valueSortActive) {
+          return;
+        }
+
+        const currentSelect = findSortDropdown();
+        if (!currentSelect) {
+          return;
+        }
+
+        const label = currentSelect.parentElement?.querySelector(DROPDOWN_LABEL_SELECTOR);
+        if (label && !label.textContent?.includes("Value (Unit Price)")) {
+          label.textContent = "Value (Unit Price)";
+        }
+      });
+    });
+
+    labelObserver.observe(document.body, { childList: true, subtree: true });
   }
 
   // --- Init ---
@@ -332,6 +383,10 @@ import {
           selectObserver.disconnect();
           selectObserver = null;
         }
+        if (labelObserver) {
+          labelObserver.disconnect();
+          labelObserver = null;
+        }
         if (stopSortWatchers) {
           stopSortWatchers();
           stopSortWatchers = null;
@@ -361,7 +416,9 @@ import {
       init,
       injectValueOption,
       observeProductList,
+      observeLabelRerender,
       observeSelectRerender,
+      updateDropdownLabel,
       resetObservers: () => {
         valueSortActive = false;
         if (productObserver) {
@@ -371,6 +428,10 @@ import {
         if (selectObserver) {
           selectObserver.disconnect();
           selectObserver = null;
+        }
+        if (labelObserver) {
+          labelObserver.disconnect();
+          labelObserver = null;
         }
         if (stopSortWatchers) {
           stopSortWatchers();

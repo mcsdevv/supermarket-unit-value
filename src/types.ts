@@ -28,7 +28,9 @@ interface SiteTestHooks {
   VALUE_OPTION_ID: string;
   findSortDropdown: () => HTMLSelectElement | null;
   injectValueOption: (select: HTMLSelectElement) => void;
+  observeLabelRerender?: () => void;
   observeSelectRerender: (select: HTMLSelectElement) => void;
+  updateDropdownLabel?: (select: HTMLSelectElement, text: string) => void;
   waitForElement: (
     selector: string,
     callback: (el: Element) => boolean | void,

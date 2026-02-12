@@ -401,3 +401,65 @@ test("init gates injection on product list appearing", async (t) => {
     "should inject after product list appears",
   );
 });
+
+test("injectValueOption updates the visible dropdown label span", async (t) => {
+  const env = setupDom(
+    '<div class="ddsweb-dropdown__container">' +
+      '<select id="sortBy"><option value="relevance">Relevance</option></select>' +
+      '<span class="ddsweb-dropdown__select-span">Relevance</span>' +
+      "</div>" +
+      '<ul data-auto="product-list">' +
+      '<li><span class="price__subtext">\u00A32.00/kg</span></li>' +
+      "</ul>",
+  );
+  t.after(() => {
+    env.hooks.resetObservers();
+    env.dom.window.close();
+  });
+
+  const select = env.document.querySelector("#sortBy");
+  env.hooks.injectValueOption(select);
+
+  const label = env.document.querySelector(".ddsweb-dropdown__select-span");
+  assert.equal(label.textContent, "Value (Unit Price)");
+});
+
+test("label observer restores span text after React re-render", async (t) => {
+  const env = setupDom(
+    '<div class="ddsweb-dropdown__container">' +
+      '<select id="sortBy"><option value="relevance">Relevance</option></select>' +
+      '<span class="ddsweb-dropdown__select-span">Relevance</span>' +
+      "</div>" +
+      '<ul data-auto="product-list">' +
+      '<li><span class="price__subtext">\u00A32.00/kg</span></li>' +
+      "</ul>",
+  );
+  t.after(() => {
+    env.hooks.resetObservers();
+    env.dom.window.close();
+  });
+
+  const select = env.document.querySelector("#sortBy");
+  env.hooks.injectValueOption(select);
+  env.hooks.observeSelectRerender(select);
+  env.hooks.observeLabelRerender();
+
+  // Activate value sort
+  select.value = env.hooks.VALUE_OPTION_ID;
+  select.dispatchEvent(new env.window.Event("change", { bubbles: true }));
+
+  const label = env.document.querySelector(".ddsweb-dropdown__select-span");
+  assert.equal(label.textContent, "Value (Unit Price)");
+
+  // Simulate React re-rendering the label back to "Relevance"
+  label.textContent = "Relevance";
+  env.document.body.append(env.document.createElement("div"));
+
+  await delay(env.window, 30);
+
+  assert.equal(
+    label.textContent,
+    "Value (Unit Price)",
+    "label text should be restored after React re-render",
+  );
+});
