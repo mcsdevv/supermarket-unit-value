@@ -16,7 +16,8 @@
     "lint:fix": "oxlint --fix src/*.ts tests/ esbuild.config.mjs",
     "format": "oxfmt .",
     "format:check": "oxfmt --check",
-    "check": "bun run typecheck && bun run lint && bun run format:check"
+    "check": "bun run typecheck && bun run lint && bun run format:check",
+    "prepare": "git config core.hooksPath .githooks"
   },
   "devDependencies": {
     "esbuild": "^0.24.0",
