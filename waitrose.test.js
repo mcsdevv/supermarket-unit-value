@@ -133,9 +133,10 @@ function setupDom(bodyHtml = "") {
 
   const { window } = dom;
   const warnings = [];
+  const logs = [];
 
   window.console.warn = (...args) => warnings.push(args.join(" "));
-  window.console.log = () => {};
+  window.console.log = (...args) => logs.push(args.join(" "));
   window.console.error = () => {};
 
   window.__WAITROSE_VALUE_SORT_TEST_MODE__ = true;
@@ -144,7 +145,7 @@ function setupDom(bodyHtml = "") {
   const hooks = window.__WAITROSE_VALUE_SORT_TEST_HOOKS__;
   assert.ok(hooks, "test hooks not initialized");
 
-  return { dom, window, document: window.document, hooks, warnings };
+  return { dom, window, document: window.document, hooks, logs, warnings };
 }
 
 // --- Tests ---
@@ -177,6 +178,16 @@ test("parseWaitroseUnitPrice parses pence-each format", (t) => {
   assert.ok(result);
   assert.ok(Math.abs(result.price - 0.467) < 0.001, `expected ~0.467, got ${result.price}`);
   assert.equal(result.unit, "each");
+});
+
+test("parseWaitroseUnitPrice parses pence-per-100g format", (t) => {
+  const env = setupDom();
+  t.after(() => { env.hooks.resetObservers(); env.dom.window.close(); });
+
+  const result = env.hooks.parseWaitroseUnitPrice("Price per unit89p/100g");
+  assert.ok(result);
+  assert.equal(result.price, 0.89);
+  assert.equal(result.unit, "100g");
 });
 
 test("parseWaitroseUnitPrice parses pounds-each format", (t) => {
@@ -366,6 +377,26 @@ test("observeProductGrid re-sorts when new products are added", async (t) => {
   const cards = grid.querySelectorAll('[class*="productPod___"]');
   const names = Array.from(cards).map((c) => c.querySelector("span:last-child").textContent);
   assert.equal(names[0], "New cheap", "newly added cheap product should be first");
+});
+
+test("observeProductGrid does not loop on self-mutations from sorting", async (t) => {
+  const env = setupDom();
+  t.after(() => { env.hooks.resetObservers(); env.dom.window.close(); });
+
+  const grid = createProductGrid(env.document, [
+    { name: "B", unitPrice: "\u00a35.00/kg" },
+    { name: "A", unitPrice: "\u00a32.00/kg" },
+  ]);
+  env.document.body.appendChild(grid);
+
+  env.hooks.valueSortActive = true;
+  env.hooks.observeProductGrid();
+  env.hooks.sortByUnitPrice();
+
+  await delay(env.window, 900);
+
+  const sortLogs = env.logs.filter((line) => line.includes("Sorted"));
+  assert.equal(sortLogs.length, 1, `expected one sort, got ${sortLogs.length}`);
 });
 
 test("clicking value option updates button text", async (t) => {

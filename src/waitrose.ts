@@ -11,6 +11,7 @@ import { normalizePrice, compareByUnitPrice, waitForElement } from "./shared";
   // --- Selectors (partial class match for resilience to CSS hash changes) ---
   const UNIT_PRICE_SELECTOR = '[class*="pricePerUnit___"]';
   const PRODUCT_GRID_SELECTOR = '[class*="flexGrid___"]';
+  const PRODUCT_CARD_SELECTOR = '[class*="productPod___"]';
   const SORT_CONTAINER_SELECTOR = '[class*="sortBy___"]';
   const SORT_BUTTON_SELECTOR = '[class*="dropdownButton___"]';
 
@@ -35,7 +36,7 @@ import { normalizePrice, compareByUnitPrice, waitForElement } from "./shared";
     const unit = match[2].trim().toLowerCase();
 
     // Handle pence: "46.7p each" — no £ sign and text has 'p' before separator
-    if (!cleaned.startsWith("£") && /^\d+(\.\d+)?p\s/i.test(cleaned)) {
+    if (!cleaned.startsWith("£") && /^\d+(\.\d+)?p(?:\s*\/|\s+)/i.test(cleaned)) {
       price /= 100;
     }
 
@@ -63,7 +64,7 @@ import { normalizePrice, compareByUnitPrice, waitForElement } from "./shared";
   }
 
   function getProductCards(grid: HTMLElement): HTMLElement[] {
-    return [...grid.querySelectorAll<HTMLElement>('[class*="productPod___"]')];
+    return [...grid.querySelectorAll<HTMLElement>(PRODUCT_CARD_SELECTOR)];
   }
 
   // --- Sorting ---
@@ -88,9 +89,24 @@ import { normalizePrice, compareByUnitPrice, waitForElement } from "./shared";
 
     sortable.sort((a, b) => compareByUnitPrice(a.priceInfo, b.priceInfo));
 
-    // Reorder DOM — appendChild moves existing nodes (no cloning)
-    for (const item of sortable) {
-      grid.appendChild(item.element);
+    // Reorder DOM — appendChild moves existing nodes (no cloning).
+    // Pause observation while reordering to avoid self-triggered sort loops.
+    const shouldResumeObserver = valueSortActive && productObserver !== null;
+    if (shouldResumeObserver) {
+      productObserver.disconnect();
+    }
+
+    try {
+      for (const item of sortable) {
+        grid.appendChild(item.element);
+      }
+    } finally {
+      if (shouldResumeObserver && productObserver) {
+        const currentGrid = getProductGrid();
+        if (currentGrid) {
+          productObserver.observe(currentGrid, { childList: true, subtree: true });
+        }
+      }
     }
 
     console.log(`${LOG_PREFIX} Sorted ${sortable.length} products by unit price`);
@@ -111,11 +127,27 @@ import { normalizePrice, compareByUnitPrice, waitForElement } from "./shared";
 
     let sortTimeout: ReturnType<typeof setTimeout> | null = null;
 
+    const mutationAddsProductCard = (mutation: MutationRecord): boolean => {
+      if (mutation.type !== "childList" || mutation.addedNodes.length === 0) {
+        return false;
+      }
+
+      for (const node of mutation.addedNodes) {
+        if (!(node instanceof Element)) {
+          continue;
+        }
+        if (node.matches(PRODUCT_CARD_SELECTOR) || node.querySelector(PRODUCT_CARD_SELECTOR)) {
+          return true;
+        }
+      }
+      return false;
+    };
+
     productObserver = new MutationObserver((mutations) => {
-      const hasNewProducts = mutations.some(
-        (m) => m.addedNodes.length > 0 && m.type === "childList",
-      );
-      if (!hasNewProducts || !valueSortActive) return;
+      const hasNewProducts = mutations.some((mutation) => mutationAddsProductCard(mutation));
+      if (!hasNewProducts || !valueSortActive) {
+        return;
+      }
 
       if (sortTimeout !== null) clearTimeout(sortTimeout);
       sortTimeout = setTimeout(() => sortByUnitPrice(), 300);
