@@ -6,7 +6,7 @@
     "build:prod": "node esbuild.config.mjs --prod",
     "build:watch": "node esbuild.config.mjs --watch",
     "typecheck": "tsc --noEmit",
-    "test": "bun run build && node --test 'tests/*.test.js'",
+    "test": "bun run build && node --test tests/*.test.js",
     "test:tesco": "bun run build && node --test tests/content.test.js",
     "test:sainsburys": "bun run build && node --test tests/sainsburys-content.test.js",
     "test:morrisons": "bun run build && node --test tests/morrisons-content.test.js",
