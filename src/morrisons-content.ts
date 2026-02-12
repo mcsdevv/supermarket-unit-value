@@ -87,10 +87,7 @@ import type {
     // Strategy 2: role=combobox near "Sort by" text
     const textNodes = document.querySelectorAll("h2, label, span, div, p");
     for (const node of textNodes) {
-      if (
-        node.childElementCount === 0 &&
-        node.textContent?.trim().toLowerCase() === "sort by"
-      ) {
+      if (node.childElementCount === 0 && node.textContent?.trim().toLowerCase() === "sort by") {
         const parent = node.closest("div, form, fieldset, section");
         if (parent) {
           combobox = parent.querySelector<HTMLElement>('[role="combobox"]');
@@ -113,36 +110,33 @@ import type {
 
   // --- Utilities ---
 
-  function waitForSelector(selector: string, timeout = 10000): Promise<HTMLElement | null> {
-    return new Promise((resolve) => {
-      const existing = document.querySelector<HTMLElement>(selector);
-      if (existing) {
-        resolve(existing);
-        return;
-      }
+  async function waitForSelector(selector: string, timeout = 10000): Promise<HTMLElement | null> {
+    const existing = document.querySelector<HTMLElement>(selector);
+    if (existing) return existing;
 
-      let done = false;
+    const result = await new Promise<HTMLElement | null>((resolve) => {
+      const ac = new AbortController();
 
       const observer = new MutationObserver(() => {
-        if (done) return;
         const el = document.querySelector<HTMLElement>(selector);
         if (el) {
-          done = true;
+          ac.abort();
           observer.disconnect();
-          clearTimeout(timer);
           resolve(el);
         }
       });
 
       observer.observe(document.body, { childList: true, subtree: true });
 
-      const timer = setTimeout(() => {
-        if (done) return;
-        done = true;
-        observer.disconnect();
-        resolve(null);
+      setTimeout(() => {
+        if (!ac.signal.aborted) {
+          observer.disconnect();
+          resolve(null);
+        }
       }, timeout);
     });
+
+    return result;
   }
 
   // --- Combobox Interaction ---
@@ -293,7 +287,7 @@ import type {
       if (!valueSortActive) return;
 
       const hasNewProducts = mutations.some(
-        (m) => m.addedNodes.length > 0 && m.type === "childList"
+        (m) => m.addedNodes.length > 0 && m.type === "childList",
       );
       if (!hasNewProducts) return;
 
@@ -306,39 +300,38 @@ import type {
 
   // --- Init ---
 
-  function activateSort(): void {
+  async function activateSort(): Promise<void> {
     const combobox = findSortCombobox();
     if (!combobox) {
       console.warn(`${LOG_PREFIX} Sort combobox not found`);
       return;
     }
 
-    selectPricePerOption(combobox).then((success) => {
-      if (success) {
-        valueSortActive = true;
-        observeComboboxResets();
-        // Wait for server response to update DOM, then client-side sort
-        setTimeout(() => {
-          sortProductsByUnitPrice();
-          observeProductLoads();
-        }, 1000);
-      }
-    });
+    const success = await selectPricePerOption(combobox);
+    if (success) {
+      valueSortActive = true;
+      observeComboboxResets();
+      // Wait for server response to update DOM, then client-side sort
+      setTimeout(() => {
+        sortProductsByUnitPrice();
+        observeProductLoads();
+      }, 1000);
+    }
   }
 
   function init(): void {
     const loc = document.location;
     console.log(`${LOG_PREFIX} Initializing on ${loc.href}`);
 
-    waitForSelector(PRODUCTS_PAGE_SELECTOR, 10000).then((page) => {
+    void (async () => {
+      const page = await waitForSelector(PRODUCTS_PAGE_SELECTOR, 10000);
       if (!page) {
         console.warn(`${LOG_PREFIX} Products page not found within 10s`);
         return;
       }
-      waitForSelector(SORT_COMBOBOX_SELECTOR, 10000).then((combobox) => {
-        if (combobox) activateSort();
-      });
-    });
+      const combobox = await waitForSelector(SORT_COMBOBOX_SELECTOR, 10000);
+      if (combobox) activateSort();
+    })();
 
     // Watch for SPA navigation
     let lastUrl = loc.href;
@@ -357,12 +350,12 @@ import type {
           productObserver = null;
         }
 
-        waitForSelector(PRODUCTS_PAGE_SELECTOR, 10000).then((page) => {
+        void (async () => {
+          const page = await waitForSelector(PRODUCTS_PAGE_SELECTOR, 10000);
           if (!page) return;
-          waitForSelector(SORT_COMBOBOX_SELECTOR, 10000).then((combobox) => {
-            if (combobox) activateSort();
-          });
-        });
+          const combobox = await waitForSelector(SORT_COMBOBOX_SELECTOR, 10000);
+          if (combobox) activateSort();
+        })();
       }
     }).observe(document.body, { childList: true, subtree: true });
   }
@@ -383,8 +376,12 @@ import type {
       waitForSelector,
       activateSort,
       init,
-      get valueSortActive() { return valueSortActive; },
-      set valueSortActive(v: boolean) { valueSortActive = v; },
+      get valueSortActive() {
+        return valueSortActive;
+      },
+      set valueSortActive(v: boolean) {
+        valueSortActive = v;
+      },
       resetObservers: () => {
         valueSortActive = false;
         if (comboboxObserver) {
