@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# Check if lockfile changed in the merge
+CHANGED_FILES=$(git diff-tree -r --name-only ORIG_HEAD HEAD)
+if echo "$CHANGED_FILES" | grep -q "bun.lockb"; then
+  echo "lockfile changed — running bun install..."
+  bun install
+fi
+
+echo "Building extension..."
+bun run build
