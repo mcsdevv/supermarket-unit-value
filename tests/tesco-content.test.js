@@ -12,7 +12,7 @@ function delay(window, ms) {
 }
 
 // Flush microtask queue (needed because auto-sort is async behind getAutoSortSetting)
-const tick = () => new Promise((r) => setTimeout(r, 0));
+const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 function setAutoSortSetting(window, enabled) {
   window.chrome = {
@@ -463,7 +463,7 @@ test("observeProductList sorts once per product load without self-trigger loop",
   li.innerHTML = '<span class="price__subtext">£1.00/kg</span>';
   env.hooks.getProductList().append(li);
 
-  await delay(env.window, 1_100);
+  await delay(env.window, 1100);
 
   assert.equal(sortedLogs, 2, "expected initial sort + one follow-up sort only");
 });
@@ -677,7 +677,7 @@ test("extractUnitPrice uses Clubcard unit price when lower than regular", async 
   const result = env.hooks.extractUnitPrice(card);
 
   assert.ok(result, "should return a price");
-  assert.equal(result.price, 6.0);
+  assert.equal(result.price, 6);
   assert.equal(result.unit, "kg");
 });
 
@@ -722,7 +722,7 @@ test("extractUnitPrice falls back to regular when Clubcard text is unparseable",
   const result = env.hooks.extractUnitPrice(card);
 
   assert.ok(result, "should return regular price as fallback");
-  assert.equal(result.price, 5.0);
+  assert.equal(result.price, 5);
   assert.equal(result.unit, "kg");
 });
 
@@ -756,7 +756,8 @@ test("sortByUnitPrice ranks Clubcard-discounted items by their lower unit price"
   const items = env.document.querySelectorAll('[data-auto="product-list"] > li');
   const prices = [...items].map((li) => li.querySelector('[class*="price__subtext"]').textContent);
   // Clubcard item (£3.00/kg effective) should be first, then £4.00, then £5.00
-  assert.equal(prices[0], "£7.00/kg"); // this card's effective price is £3.00/kg via clubcard
+  // This card's effective price is £3.00/kg via clubcard
+  assert.equal(prices[0], "£7.00/kg");
   assert.equal(prices[1], "£4.00/kg");
   assert.equal(prices[2], "£5.00/kg");
 });
