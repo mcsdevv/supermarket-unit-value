@@ -9,8 +9,10 @@ const sharedOptions = {
   format: "iife",
   logLevel: "info",
   minify: isProd,
+  pure: isProd ? ["console.log"] : [],
   sourcemap: false,
   target: "chrome120",
+  treeShaking: isProd,
 };
 
 const configs = [

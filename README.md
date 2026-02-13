@@ -1,6 +1,7 @@
 # Supermarket Value Sort
 
 [![Tests](https://github.com/mcsdevv/supermarket-best-value/actions/workflows/tests.yml/badge.svg)](https://github.com/mcsdevv/supermarket-best-value/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/mcsdevv/supermarket-best-value/blob/main/LICENSE)
 
 A Chrome extension that adds a "Value (Unit Price)" sort option to UK supermarket websites. It sorts products from cheapest to most expensive per unit (per kg, per litre, per item, etc.) so you can find the best deal at a glance.
 
@@ -34,10 +35,16 @@ Products without a unit price are moved to the bottom of the list.
 
 ## Install
 
+<!-- TODO: Uncomment once published -->
+<!-- [Install from the Chrome Web Store](https://chrome.google.com/webstore/detail/supermarket-value-sort/EXTENSION_ID) -->
+
+### From source
+
 1. Download or clone this repository
-2. Open `chrome://extensions` in Chrome
-3. Enable "Developer mode" (top right)
-4. Click "Load unpacked" and select the `dist/` folder
+2. Run `bun install && bun run build`
+3. Open `chrome://extensions` in Chrome
+4. Enable "Developer mode" (top right)
+5. Click "Load unpacked" and select the `dist/` folder
 
 ## Build from Source
 
@@ -56,4 +63,8 @@ If something isn't working or you have an idea for an improvement, please [open 
 
 ## Privacy
 
-This extension runs entirely in your browser. It makes no network requests, collects no data, and requires no special permissions beyond access to the supported supermarket pages.
+This extension runs entirely in your browser. It makes no network requests, collects no data, and requires no special permissions beyond access to the supported supermarket pages. See [PRIVACY.md](PRIVACY.md) for the full privacy policy.
+
+## License
+
+[MIT](LICENSE)
