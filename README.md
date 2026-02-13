@@ -35,8 +35,7 @@ Products without a unit price are moved to the bottom of the list.
 
 ## Install
 
-<!-- TODO: Uncomment once published -->
-<!-- [Install from the Chrome Web Store](https://chrome.google.com/webstore/detail/supermarket-unit-value/EXTENSION_ID) -->
+[Install from the Chrome Web Store](https://chrome.google.com/webstore/detail/supermarket-unit-value/gceceldpgcapcbmbjffgflinapgcmggc)
 
 ### From source
 
